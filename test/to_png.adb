@@ -18,7 +18,7 @@ with GID;
 
 with Dumb_PNG;
 
-with Ada.Calendar,
+with Ada.Real_Time,
      Ada.Characters.Handling,
      Ada.Command_Line,
      Ada.Streams.Stream_IO,
@@ -32,7 +32,7 @@ procedure To_PNG is
 
   default_bkg_name : constant String := "gid.gif";
 
-  use Ada.Characters.Handling, Ada.Streams.Stream_IO, Ada.Strings.Unbounded, Ada.Text_IO;
+  use Ada.Real_Time, Ada.Characters.Handling, Ada.Streams.Stream_IO, Ada.Strings.Unbounded, Ada.Text_IO;
 
   procedure Blurb is
   begin
@@ -78,12 +78,12 @@ procedure To_PNG is
   procedure Load_Raw_Image
     (image      : in out GID.Image_Descriptor;
      buffer     : in out p_Byte_Array;
-     next_frame :    out Ada.Calendar.Day_Duration);
+     next_frame :    out Duration);
   --
   procedure Load_Raw_Image
     (image      : in out GID.Image_Descriptor;
      buffer     : in out p_Byte_Array;
-     next_frame :    out Ada.Calendar.Day_Duration)
+     next_frame :    out Duration)
   is
     subtype Primary_color_range is Unsigned_8;
     subtype U16 is Unsigned_16;
@@ -323,8 +323,8 @@ procedure To_PNG is
     i : GID.Image_Descriptor;
     up_name : constant String := To_Upper (file_name);
     --
-    next_frame, current_frame : Ada.Calendar.Day_Duration := 0.0;
-    use Ada.Calendar, Ada.Strings, Ada.Strings.Fixed;
+    next_frame, current_frame : Duration := 0.0;
+    use Ada.Strings, Ada.Strings.Fixed;
     use type GID.Image_Format_Type;
     T0, T1 : Time;
   begin
@@ -442,7 +442,7 @@ procedure To_PNG is
     Close (f);
     Put_Line
       (Current_Error,
-       "Time elapsed:" & Duration'Image (T1 - T0) & " seconds.");
+       "Time elapsed:" & Duration'Image (To_Duration (T1 - T0)) & " seconds.");
 
   exception
     when GID.unknown_image_format =>

@@ -105,7 +105,7 @@ package body GID.Decoding_PNG is
 
   procedure Load
     (image      : in out Image_Descriptor;
-     next_frame :    out Ada.Calendar.Day_Duration)
+     next_frame :    out Duration)
   is
 
     ch : Chunk_Header;
@@ -182,7 +182,7 @@ package body GID.Decoding_PNG is
             Ada.Text_IO.New_Line;
           end if;
           Ada.Text_IO.Put_Line
-            ("row" & y'Image & ": filter= " & current_filter'Image);
+            ("row" & Y_range'Image (y) & ": filter= " & Filter_method_0'Image (current_filter));
         end if;
         --
         --  !! find a way to have f99n0g04.png decoded correctly...
@@ -444,7 +444,7 @@ package body GID.Decoding_PNG is
         if some_trace then
           Ada.Text_IO.Put_Line
             ("[Output Uncompressed]; frame: " &
-             frame_width'Image & " x " & frame_height'Image);
+             Positive'Image (frame_width) & " x " & Positive'Image (frame_height));
         end if;
         --  Depending on the row size, bpp, etc., we can have
         --  several rows, or less than one, being displayed
@@ -469,8 +469,8 @@ package body GID.Decoding_PNG is
             exception
               when Constraint_Error =>
                 raise error_in_image_data with
-                  "PNG: wrong filter code, row #" & y'Image &
-                  " code:" & data (i)'Image;
+                  "PNG: wrong filter code, row #" & Y_range'Image (y) &
+                  " code:" & U8'Image (data (i));
             end;
             if interlaced then
               case pass is
@@ -817,7 +817,7 @@ package body GID.Decoding_PNG is
         procedure Flush (x : Natural) is
         begin
           if full_trace then
-            Ada.Text_IO.Put ("[Flush..." & x'Image);
+            Ada.Text_IO.Put ("[Flush..." & X_range'Image (x));
           end if;
           for slide_idx in 0 .. x - 1 loop
             UnZ_Glob.adler_1 := (UnZ_Glob.adler_1 + Unsigned_32 (UnZ_Glob.slide (slide_idx))) rem UnZ_Glob.modulus;
@@ -1372,7 +1372,7 @@ package body GID.Decoding_PNG is
       if some_trace then
         for f in Filter_method_0 loop
           Ada.Text_IO.Put_Line
-            ("Filters used for this frame: " & f'Image & filter_stat (f)'Image);
+            ("Filters used for this frame: " & Filter_method_0'Image (f) & Natural'Image (filter_stat (f)));
         end loop;
       end if;
       Feedback (100);
@@ -1503,7 +1503,7 @@ package body GID.Decoding_PNG is
       dispose_op      : PNG_Defs.Dispose_Op_Type;
       blend_op        : PNG_Defs.Blend_Op_Type;
       --
-      frame_delay : Ada.Calendar.Day_Duration;
+      frame_delay : Duration;
     begin
       Big_Endian (image.buffer, sequence_number);
       Big_Endian (image.buffer, width);
@@ -1516,8 +1516,8 @@ package body GID.Decoding_PNG is
       Buffering.Get_Byte (image.buffer, blend_op_byte);
       --
       frame_delay :=
-        Ada.Calendar.Day_Duration (delay_num) /
-        Ada.Calendar.Day_Duration (delay_den);
+        Duration (delay_num) /
+        Duration (delay_den);
       image.next_frame := image.next_frame + frame_delay;
       next_frame := image.next_frame;
       begin
@@ -1525,14 +1525,14 @@ package body GID.Decoding_PNG is
       exception
         when Constraint_Error =>
           raise error_in_image_data with
-            "APNG Dispose_Op_Type value invalid: " & dispose_op_byte'Image;
+            "APNG Dispose_Op_Type value invalid: " & U8'Image (dispose_op_byte);
       end;
       begin
         blend_op := PNG_Defs.Blend_Op_Type'Val (blend_op_byte);
       exception
         when Constraint_Error =>
           raise error_in_image_data with
-            "APNG Blend_Op_Type value invalid: " & blend_op_byte'Image;
+            "APNG Blend_Op_Type value invalid: " & U8'Image (blend_op_byte);
       end;
       image.PNG_stuff :=
         (frame_width  => Positive_32 (width),
@@ -1544,11 +1544,11 @@ package body GID.Decoding_PNG is
       --
       if some_trace then
         Ada.Text_IO.Put_Line ("  Frame Control");
-        Ada.Text_IO.Put_Line ("    Dimensions (pixels):" & width'Image & " x" & height'Image);
-        Ada.Text_IO.Put_Line ("    Offset             :" & x_offset'Image & ',' & y_offset'Image);
-        Ada.Text_IO.Put_Line ("    Delay              :" & frame_delay'Image);
-        Ada.Text_IO.Put_Line ("    Dispose operation  : " & dispose_op'Image);
-        Ada.Text_IO.Put_Line ("    Blend operation    : " & blend_op'Image);
+        Ada.Text_IO.Put_Line ("    Dimensions (pixels):" & U32'Image (width) & " x" & U32'Image (height));
+        Ada.Text_IO.Put_Line ("    Offset             :" & U32'Image (x_offset) & ',' & U32'Image (y_offset));
+        Ada.Text_IO.Put_Line ("    Delay              :" & Duration'Image (frame_delay));
+        Ada.Text_IO.Put_Line ("    Dispose operation  : " & PNG_Defs.Dispose_Op_Type'Image (dispose_op));
+        Ada.Text_IO.Put_Line ("    Blend operation    : " & PNG_Defs.Blend_Op_Type'Image (blend_op));
       end if;
     end Frame_Control_Chunk;
 
@@ -1613,7 +1613,7 @@ package body GID.Decoding_PNG is
     end loop main_chunk_loop;
 
     if some_trace then
-      Ada.Text_IO.Put_Line ("[end Load]; next_frame =" & next_frame'Image);
+      Ada.Text_IO.Put_Line ("[end Load]; next_frame =" & Duration'Image (next_frame));
     end if;
   end Load;
 

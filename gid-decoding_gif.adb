@@ -1,4 +1,4 @@
---  GIF Decoder by André van Splunter
+--  GIF Decoder by Andrï¿½ van Splunter
 --
 --  A GIF stream is made of several "blocks".
 --  The image itself is contained in an Image Descriptor block.
@@ -41,7 +41,7 @@ package body GID.Decoding_GIF is
 
   procedure Load
     (image      : in out Image_Descriptor;
-     next_frame :    out Ada.Calendar.Day_Duration)
+     next_frame :    out Duration)
   is
     local : Image_Descriptor;
     --  With GIF, each frame is a local image with an eventual
@@ -267,7 +267,7 @@ package body GID.Decoding_GIF is
 
     begin  --  GIF_Decode
       --  The decoder source and the cool comments are kindly donated by
-      --  André van Splunter.
+      --  Andrï¿½ van Splunter.
       --
       curr_size := Init_Code_Size;
       --  This is the main loop.  For each code we get we pass through the
@@ -371,7 +371,7 @@ package body GID.Decoding_GIF is
          C := Read_Code;
       end loop;
       if full_trace and then bad_code_count > 0 then
-        Ada.Text_IO.Put_Line ("Found" & bad_code_count'Image & " bad codes");
+        Ada.Text_IO.Put_Line ("Found" & Natural'Image (bad_code_count) & " bad codes");
       end if;
     end GIF_Decode_Frame;
 
@@ -429,7 +429,7 @@ package body GID.Decoding_GIF is
           frame_transparency := (temp and 1) = 1;
           Read_Intel (image.buffer, delay_frame);
           image.next_frame :=
-            image.next_frame + Ada.Calendar.Day_Duration (delay_frame) / 100.0;
+            image.next_frame + Duration (delay_frame) / 100.0;
           next_frame := image.next_frame;
           Get_Byte (image.buffer, temp);
           transp_color := Color_Type (temp);
@@ -465,7 +465,7 @@ package body GID.Decoding_GIF is
           Skip_sub_blocks;
         when others =>
           if full_trace then
-            Ada.Text_IO.Put_Line (" - Unused extension:" & label'Image);
+            Ada.Text_IO.Put_Line (" - Unused extension:" & U8'Image (label));
           end if;
           Skip_sub_blocks;
       end case;
@@ -488,7 +488,7 @@ package body GID.Decoding_GIF is
       separator := Character'Val (temp);
       if full_trace then
         Ada.Text_IO.Put
-          ("GIF separator [" & separator & "][" & temp'Image & ']');
+          ("GIF separator [" & separator & "][" & U8'Image (temp) & ']');
       end if;
       case separator is
         when ',' =>  --  16#2C#
@@ -566,17 +566,17 @@ package body GID.Decoding_GIF is
 
     if full_trace then
       Ada.Text_IO.Put_Line
-        (" - Image, interlaced: " & frame_interlaced'Image &
-         "; local palette: " & local_palette'Image &
-         "; transparency: " & frame_transparency'Image &
-         "; transparency index:" & transp_color'Image);
+        (" - Image, interlaced: " & Boolean'Image (frame_interlaced) &
+         "; local palette: " & Boolean'Image (local_palette) &
+         "; transparency: " & Boolean'Image (frame_transparency) &
+         "; transparency index:" & Color_Type'Image (transp_color));
     end if;
 
     --  Get initial code size
     Get_Byte (image.buffer, temp);
     if Natural (temp) not in Code_Size_Range then
       raise error_in_image_data with
-        "GIF: wrong LZW code size (must be in 2 .. 12), is" & temp'Image;
+        "GIF: wrong LZW code size (must be in 2 .. 12), is" & U8'Image (temp);
     end if;
     code_size_as_in_frame_header := Natural (temp);
 

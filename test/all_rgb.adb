@@ -11,7 +11,7 @@ with GID;
 with Color_Distances;
 with Dumb_PNG;
 
-with Ada.Calendar,
+with Ada.Real_Time,
      Ada.Characters.Handling,
      Ada.Command_Line,
      Ada.Numerics.Discrete_Random,
@@ -24,7 +24,7 @@ with Interfaces;
 
 procedure All_RGB is
 
-  use Ada.Streams.Stream_IO, Ada.Text_IO;
+  use Ada.Real_Time, Ada.Streams.Stream_IO, Ada.Text_IO;
 
   procedure Blurb is
   begin
@@ -68,7 +68,7 @@ procedure All_RGB is
   procedure Load_Raw_Image
     (image      : in out GID.Image_Descriptor;
      bmp        : in out Bitmap;
-     next_frame :    out Ada.Calendar.Day_Duration)
+     next_frame :    out Duration)
   is
     subtype Primary_color_range is Unsigned_8;
     pos_x, pos_y, max_y : Natural;
@@ -131,7 +131,7 @@ procedure All_RGB is
     mix_phase : Integer := 3 * 4096 ** 2;
     do_swap : Boolean;
     total_iter : Integer;
-    tick : Integer;
+    ntick : Integer;
     --
   begin
     if do_clear then
@@ -151,7 +151,7 @@ procedure All_RGB is
     --
     Reset (gen);
     total_iter := mix_phase + tr_iterations;
-    tick := total_iter / 10;
+    ntick := total_iter / 10;
     for i in 1 .. total_iter loop
       x1 := Random (gen);
       y1 := Random (gen);
@@ -180,7 +180,7 @@ procedure All_RGB is
       if do_swap  then
         Swap (dst (x1, y1), dst (x2, y2));
       end if;
-      if i rem tick = 0 then
+      if i rem ntick = 0 then
         Put (Standard_Error, '*');
       end if;
     end loop;
@@ -211,7 +211,7 @@ procedure All_RGB is
      iterations   : Integer;
      startup_name : String)
   is
-    use Ada.Calendar, Ada.Characters.Handling;
+    use Ada.Characters.Handling;
     f : Ada.Streams.Stream_IO.File_Type;
     i : GID.Image_Descriptor;
     up_name : constant String := To_Upper (name);
@@ -225,7 +225,7 @@ procedure All_RGB is
       startup_name'Length >= 4 and then
       up_startup_name (up_startup_name'Last - 3 .. up_startup_name'Last) = ".TGA";
     --
-    next_frame : Day_Duration := 0.0;
+    next_frame : Duration := 0.0;
     T0, T1 : Time;
     procedure Transform_L1   is new Transform (L1);
     procedure Transform_L2   is new Transform (L2);
@@ -276,7 +276,7 @@ procedure All_RGB is
     New_Line (Standard_Error);
     Put_Line
       (Standard_Error,
-       "Time elapsed:" & Duration'Image (T1 - T0) & " seconds.");
+       "Time elapsed:" & Duration'Image (To_Duration (T1 - T0)) & " seconds.");
   end Process;
 
   Lx : Dist_Type := L2;

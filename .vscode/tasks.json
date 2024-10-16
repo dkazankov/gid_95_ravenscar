@@ -1,0 +1,35 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+        {
+            "type": "ada",
+            "command": "gprbuild",
+			"args": [
+				"-XBUILD=Debug",
+				"-XGID_Build_Mode=Debug",
+				"-P",
+				"gid.gpr",
+			],
+            "problemMatcher": [
+                "$ada"
+            ],
+            "group": "build",
+            "label": "ada: Debug build GID project"
+        },
+        {
+            "type": "ada",
+            "command": "gprbuild",
+			"args": [
+				"-XBUILD=Release",
+				"-XGID_Build_Mode=Fast_unchecked",
+				"-P",
+				"gid.gpr",
+			],
+            "problemMatcher": [
+                "$ada"
+            ],
+            "group": "build",
+            "label": "ada: Release build GID project"
+        }
+	]
+}

@@ -113,7 +113,7 @@ package body GID.Decoding_JPG is
     BIO.Put (hexa, m, 16);
     for jm in JPEG_Marker loop
       if marker_id (jm) = m then
-        return hexa & ", marker: " & jm'Image;
+        return hexa & ", marker: " & JPEG_Marker'Image (jm);
       end if;
     end loop;
     return hexa;
@@ -157,7 +157,7 @@ package body GID.Decoding_JPG is
         end case;
         if some_trace then
           Put_Line
-            ("Segment [" & head.kind'Image & "], length:" & head.length'Image);
+            ("Segment [" & JPEG_Marker'Image (head.kind) & "], length:" & U16'Image (head.length));
         end if;
         return;
       end if;
@@ -173,7 +173,7 @@ package body GID.Decoding_JPG is
     dummy : U8;
   begin
     if full_trace then
-      Put_Line ("Skipping segment: " & head.kind'Image);
+      Put_Line ("Skipping segment: " & JPEG_Marker'Image (head.kind));
     end if;
     for i in 1 .. head.length loop
       Get_Byte (image.buffer, dummy);
@@ -195,12 +195,12 @@ package body GID.Decoding_JPG is
         image.progressive := True;
       when others =>
         raise unsupported_image_subformat with
-          "JPEG: image type not yet supported: " & sh.kind'Image;
+          "JPEG: image type not yet supported: " & JPEG_Marker'Image (sh.kind);
     end case;
     Get_Byte (image.buffer, bits_pp_primary);
     if bits_pp_primary /= 8 then
       raise unsupported_image_subformat with
-        "JPEG: bits per primary color=" & bits_pp_primary'Image & " (not supported)";
+        "JPEG: bits per primary color=" & U8'Image (bits_pp_primary) & " (not supported)";
     end if;
     image.bits_per_pixel := 3 * Positive (bits_pp_primary);
     Big_Endian (image.buffer, h);
@@ -233,7 +233,7 @@ package body GID.Decoding_JPG is
         end if;
       end if;
       if b - id_base > Component'Pos (Component'Last) then
-        raise error_in_image_data with "JPEG: SOF: invalid component ID: " & b'Image;
+        raise error_in_image_data with "JPEG: SOF: invalid component ID: " & U8'Image (b);
       end if;
       compo := JPEG_Defs.Component'Val (b - id_base);
       image.JPEG_stuff.compo_set (compo) := True;
@@ -261,7 +261,7 @@ package body GID.Decoding_JPG is
     if some_trace then
       Put_Line ("Frame has following components:");
       for c in JPEG_Defs.Component loop
-        Put_Line (c'Image & " -> " & image.JPEG_stuff.compo_set (c)'Image);
+        Put_Line (Component'Image (c) & " -> " & Boolean'Image (image.JPEG_stuff.compo_set (c)));
       end loop;
       New_Line;
     end if;
@@ -276,17 +276,17 @@ package body GID.Decoding_JPG is
           info.upsampling_profile := Identify (info.ups);
 
           if some_trace then
-            Put_Line ("For component " & c'Image);
+            Put_Line ("For component " & Component'Image (c));
             Put_Line
               ("    samples . . . . .  :" &
-                info.ups.samples_hor'Image & " horizontal and" &
-                info.ups.samples_ver'Image & " vertical");
+                Natural'Image (info.ups.samples_hor) & " horizontal and" &
+                Natural'Image (info.ups.samples_ver) & " vertical");
             Put_Line
               ("     upsampling factors:" &
-               info.ups.up_factor_x'Image & " horizontally and" &
-               info.ups.up_factor_y'Image & " vertically");
+               Natural'Image (info.ups.up_factor_x) & " horizontally and" &
+               Natural'Image (info.ups.up_factor_y) & " vertically");
             Put_Line
-              ("     upsampling profile: " & info.upsampling_profile'Image);
+              ("     upsampling profile: " & Upsampling_Profile_Type'Image (info.upsampling_profile));
           end if;
         end;
       end if;
@@ -307,9 +307,9 @@ package body GID.Decoding_JPG is
         "JPEG: only YCbCr, Y_Grey and CMYK color spaces are currently defined";
     end if;
     image.detailed_format := image.detailed_format & ", " &
-      image.JPEG_stuff.color_space'Image;
+      JPEG_Defs.Supported_Color_Space'Image (image.JPEG_stuff.color_space);
     if some_trace then
-      Put_Line ("Color space: " & image.JPEG_stuff.color_space'Image);
+      Put_Line ("Color space: " & JPEG_Defs.Supported_Color_Space'Image (image.JPEG_stuff.color_space));
     end if;
     if image.JPEG_stuff.color_space = CMYK then
       raise unsupported_image_subformat with
@@ -341,8 +341,8 @@ package body GID.Decoding_JPG is
       ht_idx := Natural (b and 7);
       if some_trace then
         Put_Line
-          ("  Huffman Table (HT) #" & ht_idx'Image &
-           ", of kind (AC/DC): " & kind'Image);
+          ("  Huffman Table (HT) #" & Natural'Image (ht_idx) &
+           ", of kind (AC/DC): " & AC_DC'Image (kind));
       end if;
       if image.JPEG_stuff.vlc_defs (kind, ht_idx) = null then
         image.JPEG_stuff.vlc_defs (kind, ht_idx) := new VLC_Table;
@@ -362,14 +362,14 @@ package body GID.Decoding_JPG is
           if remaining < current_count then
             raise error_in_image_data
               with
-                "JPEG: DHT data too short [1]: remaining =" & remaining'Image;
+                "JPEG: DHT data too short [1]: remaining =" & Integer_M32'Image (remaining);
           end if;
           remain_vlc := remain_vlc - current_count * spread;
           if remain_vlc < 0 then
             raise error_in_image_data
               with
                 "JPEG: DHT data too short [2]: remain_vlc =" &
-                remain_vlc'Image;
+                Integer_M32'Image (remain_vlc);
           end if;
           for i in reverse 1 .. current_count loop
             Get_Byte (image.buffer, b);
@@ -405,7 +405,7 @@ package body GID.Decoding_JPG is
       high_prec := b >= 8;
       qt_idx := Natural (b and 7);
       if some_trace then
-        Put_Line ("  Quantization Table (QT) #" & b'Image);
+        Put_Line ("  Quantization Table (QT) #" & U8'Image (b));
       end if;
       for i in Quantization_Table'Range loop
         if high_prec then
@@ -428,7 +428,7 @@ package body GID.Decoding_JPG is
   begin
     Big_Endian (image.buffer, ri);
     if some_trace then
-      Put_Line ("  Restart interval (DRI) set to:" & ri'Image);
+      Put_Line ("  Restart interval (DRI) set to:" & U16'Image (ri));
     end if;
     image.JPEG_stuff.restart_interval := Natural (ri);
   end Read_DRI;
@@ -484,7 +484,7 @@ package body GID.Decoding_JPG is
         ifd0_entries := Natural (b) + 16#100# * ifd0_entries;
       end if;
       if some_trace then
-        Put_Line ("EXIF's IFD0 has" & ifd0_entries'Image & " entries.");
+        Put_Line ("EXIF's IFD0 has" & Natural'Image (ifd0_entries) & " entries.");
       end if;
       x := 17;
       while x <= data_length - 12 loop
@@ -530,7 +530,7 @@ package body GID.Decoding_JPG is
           if some_trace then
             Put_Line
               ("IFD tag 0112: Orientation set to: " &
-               image.display_orientation'Image);
+               Orientation'Image (image.display_orientation));
           end if;
           exit;
         end if;
@@ -1144,16 +1144,16 @@ package body GID.Decoding_JPG is
         BIO.Put (hexa_w, w, 16);
         if some_trace then
           Put_Line
-            ("  Restart #" & next_rst'Image &
+            ("  Restart #" & U16'Image (next_rst) &
              "  Code " & hexa_w &
-             " after" & image.JPEG_stuff.restart_interval'Image &
+             " after" & Natural'Image (image.JPEG_stuff.restart_interval) &
              " macro blocks");
         end if;
         expected := 16#FFD0# + next_rst;
         if w /= expected then
           BIO.Put (hexa_exp, expected, 16);
           raise error_in_image_data with
-            "JPEG: expected RST (restart) marker Nb" & next_rst'Image &
+            "JPEG: expected RST (restart) marker Nb" & U16'Image (next_rst) &
             "; code found " & hexa_w &
             "; expected " & hexa_exp;
         end if;
@@ -1268,8 +1268,8 @@ package body GID.Decoding_JPG is
         if full_trace then
           Put_Line
             (dump_file,
-             "DC" & scan_count'Image & dump_sep &
-             "refining = "   & refining'Image);
+             "DC" & Natural'Image (scan_count) & dump_sep &
+             "refining = "   & Boolean'Image (refining));
         end if;
         if not refining then
           for c in Component loop
@@ -1281,7 +1281,7 @@ package body GID.Decoding_JPG is
           if full_trace then
             Put_Line
               (dump_file,
-               dump_sep & "current_mcu =" & current_mcu'Image);
+               dump_sep & "current_mcu =" & Natural'Image (current_mcu));
           end if;
           compo_idx := 1;  --  Compact index (without holes).
           --  Loop through all color components
@@ -1306,8 +1306,8 @@ package body GID.Decoding_JPG is
                   Put_Line
                     (dump_file,
                      dump_sep & dump_sep &
-                     "repeat =" & repeat'Image & dump_sep &
-                     "component =" & c'Image);
+                     "repeat =" & Natural'Image (repeat) & dump_sep &
+                     "component =" & Component'Image (c));
                 end if;
                 --  Blocks of 8 x 8 pixels for the color component
                 for block_count in 0 .. repeat - 1 loop
@@ -1341,8 +1341,8 @@ package body GID.Decoding_JPG is
                        dump_sep & dump_sep & dump_sep &
                        Integer_32'Image (x + delta_x) & dump_sep &
                        Integer_32'Image (y + delta_y) & dump_sep &
-                       image_array
-                         (x + delta_x, y + delta_y, compo_idx)'Image);
+                       Integer'Image (image_array
+                         (x + delta_x, y + delta_y, compo_idx)));
                   end if;
                 end loop;
               end;
@@ -1405,7 +1405,7 @@ package body GID.Decoding_JPG is
             raise Constraint_Error
               with
                 "Progressive JPEG: refining buffer capacity" &
-                max_refine_index'Image & " exceeded";
+                Natural'Image (max_refine_index) & " exceeded";
           end if;
           refine_point_x (refine_index_last) := x;
           refine_point_y (refine_index_last) := y;
@@ -1449,11 +1449,11 @@ package body GID.Decoding_JPG is
                    dump_sep & dump_sep & dump_sep &
                    Integer_32'Image (x) & dump_sep &
                    Integer_32'Image (y) & dump_sep &
-                   mem'Image & dump_sep &
-                   image_array
-                   (x, y, compo_idx)'Image & dump_sep &
+                   Integer'Image (mem) & dump_sep &
+                   Integer'Image (image_array
+                   (x, y, compo_idx)) & dump_sep &
                    "refine_ac" & dump_sep &
-                   "new_bit =" & new_bit'Image);
+                   "new_bit =" & Integer'Image (new_bit));
               end if;
               idx := idx + 1;
             end loop;
@@ -1495,9 +1495,9 @@ package body GID.Decoding_JPG is
         if full_trace then
           Put_Line
             (dump_file,
-             "AC" & scan_count'Image & dump_sep &
-             "refining = "   & refining'Image & dump_sep &
-             "single component = " & compo'Image);
+             "AC" & Natural'Image (scan_count) & dump_sep &
+             "refining = "   & Boolean'Image (refining) & dump_sep &
+             "single component = " & Component'Image (compo));
         end if;
 
         for c in Component loop
@@ -1517,7 +1517,7 @@ package body GID.Decoding_JPG is
           if full_trace then
             Put_Line
               (dump_file,
-               dump_sep & "current_mcu =" & current_mcu'Image);
+               dump_sep & "current_mcu =" & Integer'Image (current_mcu));
           end if;
 
           --  Coordinates of the MCU's corner on the image
@@ -1618,9 +1618,9 @@ package body GID.Decoding_JPG is
                    dump_sep & dump_sep & dump_sep &
                    Integer_32'Image (x + ac_x) & dump_sep &
                    Integer_32'Image (y + ac_y) & dump_sep &
-                   mem_ac_value'Image & dump_sep &
-                   image_array
-                     (x + ac_x, y + ac_y, compo_idx)'Image & dump_sep &
+                   Integer'Image (mem_ac_value) & dump_sep &
+                   Integer'Image (image_array
+                     (x + ac_x, y + ac_y, compo_idx)) & dump_sep &
                    "new ac_value" & dump_sep &
                    "new bit =" & Integer'Image (ac_value * 2 ** bit_position_low));
               end if;
@@ -1724,10 +1724,10 @@ package body GID.Decoding_JPG is
       end if;
       if full_trace then
         New_Line;
-        Put_Line ("Progressive scan kind : " & kind'Image);
-        Put_Line ("Bit position high =" & bit_position_high'Image);
-        Put_Line ("Bit position low  =" & bit_position_low'Image);
-        Put_Line ("Refining scan : "    & refining'Image);
+        Put_Line ("Progressive scan kind : " & AC_DC'Image (kind));
+        Put_Line ("Bit position high =" & Integer'Image (bit_position_high));
+        Put_Line ("Bit position low  =" & Integer'Image (bit_position_low));
+        Put_Line ("Refining scan : "    & Boolean'Image (refining));
       end if;
 
       if refining then
@@ -1771,10 +1771,10 @@ package body GID.Decoding_JPG is
                 (undo_zig_zag (i));
           end loop;
           if full_trace then
-            Put_Line (dump_file, "Image array (pre-IDCT) for " & c'Image);
+            Put_Line (dump_file, "Image array (pre-IDCT) for " & Component'Image (c));
             for y in image_array'Range (2) loop
               for x in image_array'Range (1) loop
-                Put (dump_file, image_array (x, y, c_idx)'Image & dump_sep);
+                Put (dump_file, Integer'Image (image_array (x, y, c_idx)) & dump_sep);
               end loop;
               New_Line (dump_file);
             end loop;
@@ -1893,8 +1893,8 @@ package body GID.Decoding_JPG is
       if some_trace then
         New_Line;
         Put_Line
-          ("  Start of Scan (SOS) number" & scan_count'Image & ", with" &
-           components_amount'Image & " components");
+          ("  Start of Scan (SOS) number" & Natural'Image (scan_count) & ", with" &
+           U8'Image (components_amount) & " components");
       end if;
       if Natural (components_amount) > image.subformat_id  then
         raise error_in_image_data
@@ -1914,13 +1914,13 @@ package body GID.Decoding_JPG is
           end if;
         end if;
         if b - id_base > Component'Pos (Component'Last) then
-          raise error_in_image_data with "JPEG: Scan: invalid ID:" & b'Image;
+          raise error_in_image_data with "JPEG: Scan: invalid ID:" & U8'Image (b);
         end if;
         compo := Component'Val (b - id_base);
         scan_compo_set (compo) := True;
         if not image.JPEG_stuff.compo_set (compo) then
           raise error_in_image_data with
-            "JPEG: scan component " & compo'Image &
+            "JPEG: scan component " & Component'Image (compo) &
             " has not been defined in the image header (SOF) segment";
         end if;
         --  Huffman table selection
@@ -1974,16 +1974,16 @@ package body GID.Decoding_JPG is
 
       if some_trace then
         New_Line;
-        Put_Line ("    mcu_width   = " & mcu_width'Image);
-        Put_Line ("    mcu_height  = " & mcu_height'Image);
-        Put_Line ("    mcu_count_h = " & mcu_count_h'Image);
-        Put_Line ("    mcu_count_v = " & mcu_count_v'Image);
+        Put_Line ("    mcu_width   = " & Natural'Image (mcu_width));
+        Put_Line ("    mcu_height  = " & Natural'Image (mcu_height));
+        Put_Line ("    mcu_count_h = " & Natural'Image (mcu_count_h));
+        Put_Line ("    mcu_count_v = " & Natural'Image (mcu_count_v));
         if image.progressive then
           New_Line;
           Put_Line ("    Progressive image parameters:");
-          Put_Line ("      start_spectral_selection = " & start_spectral_selection'Image);
-          Put_Line ("      end_spectral_selection   = " & end_spectral_selection'Image);
-          Put_Line ("      successive_approximation = " & successive_approximation'Image);
+          Put_Line ("      start_spectral_selection = " & U8'Image (start_spectral_selection));
+          Put_Line ("      end_spectral_selection   = " & U8'Image (end_spectral_selection));
+          Put_Line ("      successive_approximation = " & U8'Image (successive_approximation));
         end if;
       end if;
 
@@ -1994,22 +1994,22 @@ package body GID.Decoding_JPG is
           info_B (c).stride := (mcu_count_h * mcu_width * info_A (c).ups.samples_hor) / ssxmax;
           if some_trace then
             New_Line;
-            Put_Line ("    Details for component: . . . . . " & c'Image);
-            Put_Line ("      samples in x " & info_A (c).ups.samples_hor'Image);
-            Put_Line ("      samples in y " & info_A (c).ups.samples_ver'Image);
-            Put_Line ("      width  " & info_B (c).width'Image);
-            Put_Line ("      height " & info_B (c).height'Image);
-            Put_Line ("      stride " & info_B (c).stride'Image);
+            Put_Line ("    Details for component: . . . . . " & Component'Image (c));
+            Put_Line ("      samples in x " & Natural'Image (info_A (c).ups.samples_hor));
+            Put_Line ("      samples in y " & Natural'Image (info_A (c).ups.samples_ver));
+            Put_Line ("      width  " & Natural'Image (info_B (c).width));
+            Put_Line ("      height " & Natural'Image (info_B (c).height));
+            Put_Line ("      stride " & Natural'Image (info_B (c).stride));
             Put_Line
               ("      AC/DC table index:  AC:" &
-               info_B (compo).ht_idx_AC'Image & ", DC:" &
-               info_B (compo).ht_idx_DC'Image);
+               Natural'Image (info_B (compo).ht_idx_AC) & ", DC:" &
+               Natural'Image (info_B (compo).ht_idx_DC));
           end if;
           if (info_B (c).width < 3 and info_A (c).ups.samples_hor /= ssxmax) or
              (info_B (c).height < 3 and info_A (c).ups.samples_ver /= ssymax)
           then
             raise error_in_image_data with
-              "JPEG: component " & c'Image & ": sample dimension mismatch";
+              "JPEG: component " & Component'Image (c) & ": sample dimension mismatch";
           end if;
         end if;
       end loop;
@@ -2076,9 +2076,9 @@ package body GID.Decoding_JPG is
           if full_trace then
             New_Line;
             Put_Line ("SOS marker done");
-            Put_Line ("  Bit buffer length:   " & bit_buffer_length'Image);
-            Put_Line ("  Bit buffer contents: " & bit_buffer'Image);
-            Put_Line ("  Marker buffer: "       & memo_marker'Image);
+            Put_Line ("  Bit buffer length:   " & Natural'Image (bit_buffer_length));
+            Put_Line ("  Bit buffer contents: " & U32'Image (bit_buffer));
+            Put_Line ("  Marker buffer: "       & U8'Image (memo_marker));
           end if;
         when COM =>
           --  B.2.4.5 Comment
@@ -2106,7 +2106,7 @@ package body GID.Decoding_JPG is
         New_Line;
         Put_Line
           ("Longest refining list:" &
-           max_refine_index_last'Image & " points.");
+           Natural'Image (max_refine_index_last) & " points.");
       end if;
     end if;
   end Load;

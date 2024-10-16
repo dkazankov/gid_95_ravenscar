@@ -9,7 +9,7 @@ with GID;
 
 with Dumb_PNG;
 
-with Ada.Calendar,
+with Ada.Real_Time,
      Ada.Characters.Handling,
      Ada.Command_Line,
      Ada.Streams.Stream_IO,
@@ -19,7 +19,7 @@ with Interfaces;
 
 procedure Mini is
 
-  use Ada.Characters.Handling, Ada.Streams.Stream_IO, Ada.Text_IO;
+  use Ada.Real_Time, Ada.Characters.Handling, Ada.Streams.Stream_IO, Ada.Text_IO;
 
   procedure Blurb is
   begin
@@ -45,7 +45,7 @@ procedure Mini is
   procedure Load_Raw_Image
     (image : in out GID.Image_Descriptor;
      buffer : in out p_Byte_Array;
-     next_frame : out Ada.Calendar.Day_Duration)
+     next_frame : out Duration)
   is
     subtype Primary_Color_Range is Unsigned_8;
     image_width  : constant Positive := GID.Pixel_Width (image);
@@ -111,8 +111,7 @@ procedure Mini is
     i : GID.Image_Descriptor;
     up_name : constant String := To_Upper (file_name);
     --
-    use Ada.Calendar;
-    next_frame, current_frame : Day_Duration := 0.0;
+    next_frame, current_frame : Duration := 0.0;
     t0, t1 : Time;
   begin
     --
@@ -139,7 +138,7 @@ procedure Mini is
       t1 := Clock;
       Put
         (Current_Error,
-         "  Decoded in" & Duration'Image (t1 - t0) & " seconds");
+         "  Decoded in" & Duration'Image (To_Duration (t1 - t0)) & " seconds");
       Dump_PNG (file_name & current_frame'Image, i);
       New_Line (Current_Error);
       exit Animation_Loop when next_frame = 0.0;

@@ -11,8 +11,7 @@
 
 with GID;
 
-with Ada.Calendar,
-     Ada.Characters.Handling,
+with Ada.Characters.Handling,
      Ada.Command_Line,
      Ada.Streams.Stream_IO,
      Ada.Text_IO,
@@ -100,7 +99,7 @@ procedure Recurve is
   procedure Load_raw_image (
     image : in out GID.Image_Descriptor;
     bmp   : in out p_Bitmap;
-    next_frame : out Ada.Calendar.Day_Duration
+    next_frame : out Duration
   )
   is
     image_width : constant Positive := GID.Pixel_Width (image);
@@ -401,7 +400,7 @@ procedure Recurve is
     i : GID.Image_Descriptor;
     up_name : constant String := To_Upper (file_name);
     --
-    next_frame : Ada.Calendar.Day_Duration := 0.0;
+    next_frame : Duration := 0.0;
   begin
     --
     --  Load the image in its original format

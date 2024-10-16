@@ -49,7 +49,10 @@
 --  NB: this is the MIT License, as found 2-May-2010 on the site
 --  http://www.opensource.org/licenses/mit-license.php
 
-with Ada.Calendar, Ada.Streams, Ada.Strings.Bounded, Ada.Finalization;
+pragma Ada_95;
+pragma Profile (Ravenscar);
+
+with Ada.Streams, Ada.Strings.Bounded, Ada.Finalization;
 with Interfaces;
 with System;
 
@@ -140,7 +143,7 @@ package GID is
     --
   procedure Load_Image_Contents
     (image      : in out Image_Descriptor;
-     next_frame :    out Ada.Calendar.Day_Duration);
+     next_frame :    out Duration);
      --  ^ Animation: real time lapse foreseen between the first image
      --    and the image right after this one.
      --
@@ -362,12 +365,12 @@ private
     buffer              : Input_Buffer;
     palette             : p_Color_Table := null;
     first_byte          : U8;
-    next_frame          : Ada.Calendar.Day_Duration;
+    next_frame          : Duration;
     PNG_stuff           : PNG_Stuff_Type;
   end record;
 
-  overriding procedure Adjust (Object : in out Image_Descriptor);
-  overriding procedure Finalize (Object : in out Image_Descriptor);
+  procedure Adjust (Object : in out Image_Descriptor);
+  procedure Finalize (Object : in out Image_Descriptor);
 
   to_be_done : exception;
   --  ^ This exception should not happen, even with malformed files.

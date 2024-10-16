@@ -2,7 +2,7 @@ with GID,
      Comp_Img_Fct,
      Fast_IO;
 
-with Ada.Calendar,
+with Ada.Real_Time,
      Ada.Characters.Handling,
      Ada.Containers.Indefinite_Ordered_Maps,
      Ada.Containers.Vectors,
@@ -17,7 +17,7 @@ with Interfaces.C;
 
 procedure Benchmark is
 
-  use Ada.Characters.Handling, Ada.Streams.Stream_IO,
+  use Ada.Real_Time, Ada.Characters.Handling, Ada.Streams.Stream_IO,
       Ada.Strings.Fixed, Ada.Text_IO, Interfaces;
 
   procedure Blurb is
@@ -57,7 +57,7 @@ procedure Benchmark is
   procedure Load_Raw_Image
     (image : in out GID.Image_Descriptor;
      buffer : in out p_Byte_Array;
-     next_frame : out Ada.Calendar.Day_Duration)
+     next_frame : out Duration)
   is
     subtype Primary_Color_Range is Unsigned_8;
     image_width  : constant Positive := GID.Pixel_Width (image);
@@ -160,7 +160,7 @@ procedure Benchmark is
   end Sys;
 
   procedure Compute_Penalty_for_External_Calls (iterations : Integer) is
-    use Ada.Calendar, Ada.Environment_Variables;
+    use Ada.Environment_Variables;
     T0, T1 : Time;
     res : Integer;
     --  The command does nothing useful; we just want to time the call.
@@ -177,8 +177,8 @@ procedure Benchmark is
         raise Program_Error;
       end if;
       T1 := Clock;
-      dur_external_call := Duration'Min (dur_external_call, (T1 - T0));
-      delay 0.002 / (1 + iter mod 37);
+      dur_external_call := Duration'Min (dur_external_call, To_Duration (T1 - T0));
+      delay until Clock + To_Time_Span (0.002 / (1 + iter mod 37));
       --  ^ Add some randomness in thread's scheduling
     end loop;
   end Compute_Penalty_for_External_Calls;
@@ -190,9 +190,9 @@ procedure Benchmark is
     f : Ada.Streams.Stream_IO.File_Type;
     i : GID.Image_Descriptor;
     up_name : constant String := To_Upper (name);
-    next_frame : Ada.Calendar.Day_Duration := 0.0;
+    next_frame : Duration := 0.0;
 
-    use Ada.Calendar, Ada.Directories;
+    use Ada.Directories;
     res : Integer;
     T0, T1, T2 : Time;
     dur_gid, dur_magick : Duration;
@@ -260,8 +260,8 @@ procedure Benchmark is
       raise Program_Error;
     end if;
     T2 := Clock;
-    dur_gid    := T1 - T0;
-    dur_magick := T2 - T1;
+    dur_gid    := To_Duration (T1 - T0);
+    dur_magick := To_Duration (T2 - T1);
     Put (" GID: ");
     DIO.Put (dur_gid, 0, 3);
     Put ("s, IM: ");
@@ -337,8 +337,6 @@ procedure Benchmark is
     end loop;
   end Show_Stats;
 
-  use Ada.Calendar;
-
   T0, T1 : Time;
 
 begin
@@ -397,5 +395,5 @@ begin
 
   T1 := Clock;
   Put_Line
-    ("Total benchmark time:" & Duration'Image ((T1 - T0) / 60) & " minutes.");
+    ("Total benchmark time:" & Duration'Image (To_Duration ((T1 - T0) / 60)) & " minutes.");
 end Benchmark;

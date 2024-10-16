@@ -8,8 +8,7 @@ with GID;
 
 with Dumb_PNG;
 
-with Ada.Calendar,
-     Ada.Characters.Handling,
+with Ada.Characters.Handling,
      Ada.Command_Line,
      Ada.Float_Text_IO,
      Ada.Numerics.Elementary_Functions,
@@ -55,7 +54,7 @@ procedure Steg is
   procedure Load_Raw_Image
     (image      : in out GID.Image_Descriptor;
      buffer     : in out p_Byte_Array;
-     next_frame :    out Ada.Calendar.Day_Duration)
+     next_frame :    out Duration)
   is
     subtype Primary_Color_Range is Unsigned_8;
     image_width  : constant Positive := GID.Pixel_Width (image);
@@ -227,7 +226,7 @@ procedure Steg is
     img : GID.Image_Descriptor;
     up_name : constant String := To_Upper (image_name);
     --
-    next_frame : Ada.Calendar.Day_Duration;
+    next_frame : Duration;
   begin
     --
     --  Load the image in its original format

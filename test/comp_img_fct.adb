@@ -2,8 +2,7 @@ with GID;
 
 with Color_Distances;
 
-with Ada.Calendar,
-     Ada.Streams.Stream_IO,
+with Ada.Streams.Stream_IO,
      Ada.Text_IO,
      Ada.Unchecked_Deallocation;
 
@@ -33,7 +32,7 @@ is
   procedure Load_Raw_Image
     (image      : in out GID.Image_Descriptor;
      bmp        : in out Bitmap;
-     next_frame :    out Ada.Calendar.Day_Duration)
+     next_frame :    out Duration)
   is
     subtype Primary_Color_Range is Unsigned_8;
     pos_x, pos_y, max_y : Natural;
@@ -85,7 +84,7 @@ is
 
   img : array (1 .. 2) of Image_Container;
 
-  next_frame : Ada.Calendar.Day_Duration := 0.0;
+  next_frame : Duration := 0.0;
 
   procedure Free_Bitmaps is
   begin

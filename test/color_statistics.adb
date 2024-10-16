@@ -1,7 +1,6 @@
 with GID;
 
-with Ada.Calendar,
-     Ada.Streams.Stream_IO,
+with Ada.Streams.Stream_IO,
      Ada.Text_IO,
      Ada.Unchecked_Deallocation;
 
@@ -40,7 +39,7 @@ package body Color_Statistics is
     procedure Load_Raw_Image
       (image      : in out GID.Image_Descriptor;
        bmp        : in out Bitmap;
-       next_frame :    out Ada.Calendar.Day_Duration)
+       next_frame :    out Duration)
     is
       pos_x, pos_y, max_y : Natural;
       --
@@ -91,7 +90,7 @@ package body Color_Statistics is
 
     img : Image_Container;
 
-    next_frame : Ada.Calendar.Day_Duration := 0.0;
+    next_frame : Duration := 0.0;
 
     procedure Free_Bitmap is
     begin

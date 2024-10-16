@@ -122,7 +122,7 @@ package body GID is
 
   procedure Load_Image_Contents
     (image      : in out Image_Descriptor;
-     next_frame :    out Ada.Calendar.Day_Duration)
+     next_frame :    out Duration)
   is
     procedure BMP_Load is
       new Decoding_BMP.Load (Primary_Color_Range, Set_X_Y, Put_Pixel, Feedback);

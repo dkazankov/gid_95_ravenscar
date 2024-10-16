@@ -1,3 +1,6 @@
+This repo is a fork of original GID.
+It was slightly modified for Ada 95 with Ravenscar profile compatibility mode.
+
 GID - the Generic Image Decoder
 -------------------------------
 
