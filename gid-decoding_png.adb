@@ -45,19 +45,22 @@ package body GID.Decoding_PNG is
   procedure Big_Endian is new Big_Endian_Number (U32);
 
   function Chunk_Info (kind : PNG_Chunk_Tag) return String is
-  (case kind is
-     when IHDR => "Image Header",             --  11.2.1
-     when PLTE => "Palette",                  --  11.2.2
-     when IDAT => "Image Data",               --  11.2.3
-     when IEND => "Image Trailer",            --  11.2.4
-     when tEXt => "Textual Data",             --  11.3.3.2
-     when acTL => "Animation Control Chunk",  --  11.3.6.1 (APNG)
-     when fcTL => "Frame Control Chunk",      --  11.3.6.2 (APNG)
-     when fdAT => "Frame Data Chunk",         --  11.3.6.3 (APNG)
+  begin
+     case kind is
+     when IHDR => return "Image Header";             --  11.2.1
+     when PLTE => return "Palette";                  --  11.2.2
+     when IDAT => return "Image Data";               --  11.2.3
+     when IEND => return "Image Trailer";            --  11.2.4
+     when tEXt => return "Textual Data";             --  11.3.3.2
+     when acTL => return "Animation Control Chunk";  --  11.3.6.1 (APNG)
+     when fcTL => return "Frame Control Chunk";      --  11.3.6.2 (APNG)
+     when fdAT => return "Frame Data Chunk";         --  11.3.6.3 (APNG)
      when unknown_ancillary_chunk =>
-       "(unknown)",
+       return "(unknown)";
      when others =>
-       "");
+       return "";
+     end case;
+   end Chunk_Info;
 
   procedure Read_Chunk_Header
     (image : in out Image_Descriptor; ch : out Chunk_Header)
@@ -83,18 +86,18 @@ package body GID.Decoding_PNG is
           --  Anything else than 'a' .. 'z':
           --  an unknown critical chunk ('A' .. 'Z'), or corrupt data.
           --  "Encountering an unknown critical chunk is a fatal condition"
-          raise error_in_image_data with
-            "PNG chunk is unknown: " &
-            Character'Pos (str4 (1))'Image &
-            Character'Pos (str4 (2))'Image &
-            Character'Pos (str4 (3))'Image &
-            Character'Pos (str4 (4))'Image &
-            " (" & str4 & "), or PNG data is corrupt";
+          raise error_in_image_data;
+          --  with "PNG chunk is unknown: " &
+          --  Character'Pos (str4 (1))'Image &
+          --  Character'Pos (str4 (2))'Image &
+          --  Character'Pos (str4 (3))'Image &
+          --  Character'Pos (str4 (4))'Image &
+          --  " (" & str4 & "), or PNG data is corrupt";
         end if;
     end;
     if some_trace then
       Ada.Text_IO.Put_Line
-        ("Chunk [" & str4 & "], length:" & ch.length'Image &
+        ("Chunk [" & str4 & "], length:" & U32'Image (ch.length) &
          "   " & Chunk_Info (ch.kind));
     end if;
   end Read_Chunk_Header;
@@ -105,7 +108,7 @@ package body GID.Decoding_PNG is
 
   procedure Load
     (image      : in out Image_Descriptor;
-     next_frame :    out Ada.Calendar.Day_Duration)
+     next_frame :    out Duration)
   is
 
     ch : Chunk_Header;
@@ -182,7 +185,7 @@ package body GID.Decoding_PNG is
             Ada.Text_IO.New_Line;
           end if;
           Ada.Text_IO.Put_Line
-            ("row" & y'Image & ": filter= " & current_filter'Image);
+            ("row" & Natural'Image (y) & ": filter= " & Filter_method_0'Image (current_filter));
         end if;
         --
         --  !! find a way to have f99n0g04.png decoded correctly...
@@ -292,7 +295,11 @@ package body GID.Decoding_PNG is
         pragma Inline (Out_Pixel_8);
           function Times_257 (x : Primary_Color_Range) return Primary_Color_Range
           is
-          (16 * (16 * x) + x) with Inline;  --  This is 257 * x, = 16#0101# * x
+          pragma Inline (Times_257);
+          begin
+            return (16 * (16 * x) + x);
+          end Times_257;
+          --  This is 257 * x, = 16#0101# * x
           --  Numbers are 8-bit -> no OA warning at instantiation.
           --  Returns x if type Primary_Color_Range is mod 2**8.
         begin
@@ -311,8 +318,8 @@ package body GID.Decoding_PNG is
                  Times_257 (Primary_Color_Range (ba)));
                  --  Times_257 makes max intensity FF go to FFFF
             when others =>
-              raise invalid_primary_color_range
-                with "PNG: color range not supported";
+              raise invalid_primary_color_range;
+              --  with "PNG: color range not supported";
           end case;
         end Out_Pixel_8;
 
@@ -348,7 +355,8 @@ package body GID.Decoding_PNG is
                 Primary_Color_Range (ba)
               );
             when others =>
-              raise invalid_primary_color_range with "PNG: color range not supported";
+              raise invalid_primary_color_range;
+              --  with "PNG: color range not supported";
           end case;
         end Out_Pixel_16;
 
@@ -444,7 +452,7 @@ package body GID.Decoding_PNG is
         if some_trace then
           Ada.Text_IO.Put_Line
             ("[Output Uncompressed]; frame: " &
-             frame_width'Image & " x " & frame_height'Image);
+             Positive'Image (frame_width) & " x " & Positive'Image (frame_height));
         end if;
         --  Depending on the row size, bpp, etc., we can have
         --  several rows, or less than one, being displayed
@@ -468,9 +476,8 @@ package body GID.Decoding_PNG is
               end if;
             exception
               when Constraint_Error =>
-                raise error_in_image_data with
-                  "PNG: wrong filter code, row #" & y'Image &
-                  " code:" & data (i)'Image;
+                raise error_in_image_data;
+                --  with "PNG: wrong filter code, row #" & y'Image & " code:" & data (i)'Image;
             end;
             if interlaced then
               case pass is
@@ -653,8 +660,8 @@ package body GID.Decoding_PNG is
           exit when ch.kind /= IDAT or ch.length > 0;
         end loop;
         if ch.kind /= IDAT then
-          raise error_in_image_data
-            with "PNG: additional data chunk must be an IDAT";
+          raise error_in_image_data;
+          --  with "PNG: additional data chunk must be an IDAT";
         end if;
       end Jump_IDAT;
 
@@ -817,7 +824,7 @@ package body GID.Decoding_PNG is
         procedure Flush (x : Natural) is
         begin
           if full_trace then
-            Ada.Text_IO.Put ("[Flush..." & x'Image);
+            Ada.Text_IO.Put ("[Flush..." & Natural'Image (x));
           end if;
           for slide_idx in 0 .. x - 1 loop
             UnZ_Glob.adler_1 := (UnZ_Glob.adler_1 + Unsigned_32 (UnZ_Glob.slide (slide_idx))) rem UnZ_Glob.modulus;
@@ -952,7 +959,8 @@ package body GID.Decoding_PNG is
               E := CT (CT_idx).extra_bits;
               exit when E <= 16;
               if E = invalid then
-                raise error_in_image_data with "PNG: invalid code in Deflate compression";
+                raise error_in_image_data;
+                --  with "PNG: invalid code in Deflate compression";
               end if;
 
               --  then it's a literal
@@ -988,8 +996,8 @@ package body GID.Decoding_PNG is
                   E := CT (CT_idx).extra_bits;
                   exit when E <= 16;
                   if E = invalid then
-                    raise error_in_image_data
-                      with "PNG: invalid code in Deflate compression (LZ distance)";
+                    raise error_in_image_data;
+                    --  with "PNG: invalid code in Deflate compression (LZ distance)";
                   end if;
                   UnZ_IO.Bit_buffer.Dump (CT (CT_idx).bits);
                   E := E - 16;
@@ -1027,7 +1035,8 @@ package body GID.Decoding_PNG is
            (not UnZ_IO.Bit_buffer.Read_and_dump_U32 (16))
            and 16#ffff#)
           then
-            raise error_in_image_data with "PNG: invalid check code in Deflate stored block";
+            raise error_in_image_data;
+            --  with "PNG: invalid check code in Deflate stored block";
           end if;
           while N > 0  and then not UnZ_Glob.Zip_EOF loop
             --  Read and output the non-compressed data
@@ -1110,8 +1119,8 @@ package body GID.Decoding_PNG is
           exception
             when huft_out_of_memory | huft_error =>
               HufT_free (Tl);
-              raise error_in_image_data
-                with "PNG: error in Deflate compression (Huffman #1)";
+              raise error_in_image_data;
+              --  with "PNG: error in Deflate compression (Huffman #1)";
           end;
 
           Inflate_Codes (Tl, Td, Bl, Bd);
@@ -1152,8 +1161,8 @@ package body GID.Decoding_PNG is
           procedure Repeat_length_code (amount : Natural) is
           begin
             if defined + amount > number_of_lengths then
-              raise error_in_image_data
-                with "PNG: invalid data in Deflate dynamic compression structure (#1)";
+              raise error_in_image_data;
+              --  with "PNG: invalid data in Deflate dynamic compression structure (#1)";
             end if;
             for c in reverse 1 .. amount loop
               Ll (defined) := Natural_M32 (current_length);
@@ -1172,8 +1181,8 @@ package body GID.Decoding_PNG is
           Nb :=   4 + UnZ_IO.Bit_buffer.Read_and_dump (4);
 
           if Nl > 288 or else Nd > 32 then
-            raise error_in_image_data
-                with "PNG: invalid data in Deflate dynamic compression structure (#2)";
+            raise error_in_image_data;
+            --    with "PNG: invalid data in Deflate dynamic compression structure (#2)";
           end if;
 
           --  Read in bit-length-code lengths.
@@ -1190,13 +1199,13 @@ package body GID.Decoding_PNG is
             );
             if huft_incomplete then
               HufT_free (Tl);
-              raise error_in_image_data
-                with "PNG: error in Deflate compression (Huffman #2)";
+              raise error_in_image_data;
+              --  with "PNG: error in Deflate compression (Huffman #2)";
             end if;
           exception
             when others =>
-              raise error_in_image_data
-                with "PNG: error in Deflate compression (Huffman #3)";
+              raise error_in_image_data;
+              --  with "PNG: error in Deflate compression (Huffman #3)";
           end;
 
           --  Read in literal and distance code lengths
@@ -1248,13 +1257,13 @@ package body GID.Decoding_PNG is
             );
             if huft_incomplete then
               HufT_free (Tl);
-              raise error_in_image_data
-                with "PNG: error in Deflate compression (Huffman #4)";
+              raise error_in_image_data;
+              --  with "PNG: error in Deflate compression (Huffman #4)";
             end if;
           exception
             when others =>
-              raise error_in_image_data
-                with "PNG: error in Deflate compression (Huffman #5)";
+              raise error_in_image_data;
+              --  with "PNG: error in Deflate compression (Huffman #5)";
           end;
 
           --  Build the decoding tables for distance codes
@@ -1273,8 +1282,8 @@ package body GID.Decoding_PNG is
           exception
             when huft_out_of_memory | huft_error =>
               HufT_free (Tl);
-              raise error_in_image_data
-                with "PNG: error in Deflate compression (Huffman #6)";
+              raise error_in_image_data;
+              --  with "PNG: error in Deflate compression (Huffman #6)";
           end;
 
           --  Decompress until an end-of-block code
@@ -1296,8 +1305,8 @@ package body GID.Decoding_PNG is
             when 1 =>      Inflate_fixed_block;
             when 2 =>      Inflate_dynamic_block;
             when others =>
-              raise error_in_image_data with
-                "PNG: error in Deflate compression: bad block type (3)";
+              raise error_in_image_data;
+              --  with "PNG: error in Deflate compression: bad block type (3)";
           end case;
         end Inflate_Block;
 
@@ -1345,7 +1354,8 @@ package body GID.Decoding_PNG is
         adler_ok := adler_ok and b = U8 (UnZ_Glob.adler_1 rem 256);
 
         if not adler_ok then
-          raise error_in_image_data with "PNG: deflate stream corrupt (Adler32 test failed)";
+          raise error_in_image_data;
+          --    with "PNG: deflate stream corrupt (Adler32 test failed)";
         end if;
 
       end Decompress_Data;
@@ -1372,7 +1382,7 @@ package body GID.Decoding_PNG is
       if some_trace then
         for f in Filter_method_0 loop
           Ada.Text_IO.Put_Line
-            ("Filters used for this frame: " & f'Image & filter_stat (f)'Image);
+            ("Filters used for this frame: " & Filter_method_0'Image (f) & Natural'Image (filter_stat (f)));
         end loop;
       end if;
       Feedback (100);
@@ -1503,7 +1513,7 @@ package body GID.Decoding_PNG is
       dispose_op      : PNG_Defs.Dispose_Op_Type;
       blend_op        : PNG_Defs.Blend_Op_Type;
       --
-      frame_delay : Ada.Calendar.Day_Duration;
+      frame_delay : Duration;
     begin
       Big_Endian (image.buffer, sequence_number);
       Big_Endian (image.buffer, width);
@@ -1516,23 +1526,23 @@ package body GID.Decoding_PNG is
       Buffering.Get_Byte (image.buffer, blend_op_byte);
       --
       frame_delay :=
-        Ada.Calendar.Day_Duration (delay_num) /
-        Ada.Calendar.Day_Duration (delay_den);
+        Duration (delay_num) /
+        Duration (delay_den);
       image.next_frame := image.next_frame + frame_delay;
       next_frame := image.next_frame;
       begin
         dispose_op := PNG_Defs.Dispose_Op_Type'Val (dispose_op_byte);
       exception
         when Constraint_Error =>
-          raise error_in_image_data with
-            "APNG Dispose_Op_Type value invalid: " & dispose_op_byte'Image;
+          raise error_in_image_data;
+          --  with "APNG Dispose_Op_Type value invalid: " & dispose_op_byte'Image;
       end;
       begin
         blend_op := PNG_Defs.Blend_Op_Type'Val (blend_op_byte);
       exception
         when Constraint_Error =>
-          raise error_in_image_data with
-            "APNG Blend_Op_Type value invalid: " & blend_op_byte'Image;
+          raise error_in_image_data;
+          --  with "APNG Blend_Op_Type value invalid: " & blend_op_byte'Image;
       end;
       image.PNG_stuff :=
         (frame_width  => Positive_32 (width),
@@ -1544,11 +1554,11 @@ package body GID.Decoding_PNG is
       --
       if some_trace then
         Ada.Text_IO.Put_Line ("  Frame Control");
-        Ada.Text_IO.Put_Line ("    Dimensions (pixels):" & width'Image & " x" & height'Image);
-        Ada.Text_IO.Put_Line ("    Offset             :" & x_offset'Image & ',' & y_offset'Image);
-        Ada.Text_IO.Put_Line ("    Delay              :" & frame_delay'Image);
-        Ada.Text_IO.Put_Line ("    Dispose operation  : " & dispose_op'Image);
-        Ada.Text_IO.Put_Line ("    Blend operation    : " & blend_op'Image);
+        Ada.Text_IO.Put_Line ("    Dimensions (pixels):" & U32'Image (width) & " x" & U32'Image (height));
+        Ada.Text_IO.Put_Line ("    Offset             :" & U32'Image (x_offset) & ',' & U32'Image (y_offset));
+        Ada.Text_IO.Put_Line ("    Delay              :" & Duration'Image (frame_delay));
+        Ada.Text_IO.Put_Line ("    Dispose operation  : " & PNG_Defs.Dispose_Op_Type'Image (dispose_op));
+        Ada.Text_IO.Put_Line ("    Blend operation    : " & PNG_Defs.Blend_Op_Type'Image (blend_op));
       end if;
     end Frame_Control_Chunk;
 
@@ -1613,7 +1623,7 @@ package body GID.Decoding_PNG is
     end loop main_chunk_loop;
 
     if some_trace then
-      Ada.Text_IO.Put_Line ("[end Load]; next_frame =" & next_frame'Image);
+      Ada.Text_IO.Put_Line ("[end Load]; next_frame =" & Duration'Image (next_frame));
     end if;
   end Load;
 

@@ -57,9 +57,10 @@ package body GID.Color_tables is
                 null;
             end case;
           when others =>
-            raise unsupported_image_subformat with
-              "Palette loading not implemented for " &
-              Image_Format_Type'Image (image.format);
+            raise unsupported_image_subformat;
+            --  with
+            --  "Palette loading not implemented for " &
+            --  Image_Format_Type'Image (image.format);
         end case;
       end loop;
     end;

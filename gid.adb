@@ -122,7 +122,7 @@ package body GID is
 
   procedure Load_Image_Contents
     (image      : in out Image_Descriptor;
-     next_frame :    out Ada.Calendar.Day_Duration)
+     next_frame :    out Duration)
   is
     procedure BMP_Load is
       new Decoding_BMP.Load (Primary_Color_Range, Set_X_Y, Put_Pixel, Feedback);
@@ -243,7 +243,7 @@ package body GID is
 
   end JPEG_Defs;
 
-  overriding procedure Adjust (Object : in out Image_Descriptor) is
+  procedure Adjust (Object : in out Image_Descriptor) is
     use JPEG_Defs;
   begin
     --  Clone heap allocated objects, if any.
@@ -262,7 +262,7 @@ package body GID is
     end loop;
   end Adjust;
 
-  overriding procedure Finalize (Object : in out Image_Descriptor) is
+  procedure Finalize (Object : in out Image_Descriptor) is
   begin
     Clear_Heap_Allocated_Memory (Object);
   end Finalize;

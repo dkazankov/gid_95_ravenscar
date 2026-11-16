@@ -41,7 +41,7 @@ package body GID.Decoding_GIF is
 
   procedure Load
     (image      : in out Image_Descriptor;
-     next_frame :    out Ada.Calendar.Day_Duration)
+     next_frame :    out Duration)
   is
     local : Image_Descriptor;
     --  With GIF, each frame is a local image with a possible
@@ -137,7 +137,11 @@ package body GID.Decoding_GIF is
       pragma Inline (Pixel_with_Palette);
         function Times_257 (x : Primary_Color_Range) return Primary_Color_Range
         is
-        (16 * (16 * x) + x) with Inline;  --  This is 257 * x, = 16#0101# * x
+        pragma Inline (Times_257);
+        begin
+          return Primary_Color_Range (16 * (16 * x) + x);
+        end Times_257;
+        --  This is 257 * x, = 16#0101# * x
         --  Numbers are 8-bit -> no OA warning at instantiation.
         --  Returns x if type Primary_Color_Range is mod 2**8.
 
@@ -162,8 +166,8 @@ package body GID.Decoding_GIF is
                --  Times_257 makes max intensity FF go to FFFF
                full_opaque);
           when others =>
-            raise invalid_primary_color_range
-              with "GIF: color range not supported";
+            raise invalid_primary_color_range;
+            --  with "GIF: color range not supported";
         end case;
       end Pixel_with_Palette;
 
@@ -267,7 +271,7 @@ package body GID.Decoding_GIF is
 
     begin  --  GIF_Decode
       --  The decoder source and the cool comments are kindly donated by
-      --  André van Splunter.
+      --  Andrï¿½ van Splunter.
       --
       curr_size := Init_Code_Size;
       --  This is the main loop.  For each code we get we pass through the
@@ -322,7 +326,8 @@ package body GID.Decoding_GIF is
                code := Oc;
                if stack_idx > stack'Last then
                  --  In case this is compiled with range checks suppressed...
-                 raise Constraint_Error with "GIF stack exhausted [1]";
+                 raise Constraint_Error;
+                 --  with "GIF stack exhausted [1]";
                end if;
                stack (stack_idx) := Fc rem 256;
                stack_idx := stack_idx + 1;
@@ -331,7 +336,8 @@ package body GID.Decoding_GIF is
             --  helpless characters (ie. suffixes) onto the stack as we do so.
             while code >= First_Free loop
                if stack_idx > stack'Last then
-                 raise Constraint_Error with "GIF stack exhausted [2]";
+                 raise Constraint_Error;
+                 --  with "GIF stack exhausted [2]";
                end if;
                stack (stack_idx) := Suffix (code);
                stack_idx := stack_idx + 1;
@@ -344,7 +350,8 @@ package body GID.Decoding_GIF is
             --  suffix and prefix...  I'm not certain if this is correct...
             --  it might be more proper to overwrite the last code...
             if stack_idx > stack'Last then
-              raise Constraint_Error with "GIF stack exhausted [3]";
+              raise Constraint_Error;
+              --  with "GIF stack exhausted [3]";
             end if;
             stack (stack_idx) := code rem 256;
             if slot < top_slot then
@@ -371,7 +378,7 @@ package body GID.Decoding_GIF is
          C := Read_Code;
       end loop;
       if full_trace and then bad_code_count > 0 then
-        Ada.Text_IO.Put_Line ("Found" & bad_code_count'Image & " bad codes");
+        Ada.Text_IO.Put_Line ("Found" & Natural'Image (bad_code_count) & " bad codes");
       end if;
     end GIF_Decode_Frame;
 
@@ -419,7 +426,8 @@ package body GID.Decoding_GIF is
           end if;
           Get_Byte (image.buffer, temp);
           if temp /= 4 then
-            raise error_in_image_data with "GIF: error in Graphic Control Extension";
+            raise error_in_image_data;
+            --  with "GIF: error in Graphic Control Extension";
           end if;
           Get_Byte (image.buffer, temp);
           --  Reserved                      3 Bits
@@ -429,7 +437,7 @@ package body GID.Decoding_GIF is
           frame_transparency := (temp and 1) = 1;
           Read_Intel (image.buffer, delay_frame);
           image.next_frame :=
-            image.next_frame + Ada.Calendar.Day_Duration (delay_frame) / 100.0;
+            image.next_frame + Duration (delay_frame) / 100.0;
           next_frame := image.next_frame;
           Get_Byte (image.buffer, temp);
           transp_color := Color_Type (temp);
@@ -465,7 +473,7 @@ package body GID.Decoding_GIF is
           Skip_sub_blocks;
         when others =>
           if full_trace then
-            Ada.Text_IO.Put_Line (" - Unused extension:" & label'Image);
+            Ada.Text_IO.Put_Line (" - Unused extension:" & U8'Image (label));
           end if;
           Skip_sub_blocks;
       end case;
@@ -488,7 +496,7 @@ package body GID.Decoding_GIF is
       separator := Character'Val (temp);
       if full_trace then
         Ada.Text_IO.Put
-          ("GIF separator [" & separator & "][" & temp'Image & ']');
+          ("GIF separator [" & separator & "][" & U8'Image (temp) & ']');
       end if;
       case separator is
         when ',' =>  --  16#2C#
@@ -515,9 +523,8 @@ package body GID.Decoding_GIF is
             Ada.Text_IO.Put_Line (" - Wrong separator, skip and hope for the better...");
           end if;
         when others =>
-          raise error_in_image_data with
-            "GIF: unknown separator: [" & separator &
-            "] code:" & Integer'Image (Character'Pos (separator));
+          raise error_in_image_data;
+          --  with "GIF: unknown separator: [" & separator & "] code:" & Integer'Image (Character'Pos (separator));
       end case;
     end loop;
 
@@ -554,7 +561,8 @@ package body GID.Decoding_GIF is
       Color_tables.Load_palette (local);
       image.buffer := local.buffer;
     elsif image.palette = null then
-      raise error_in_image_data with "GIF: neither local, nor global palette";
+      raise error_in_image_data;
+      --  with "GIF: neither local, nor global palette";
     else
       --  Use global palette
       new_num_of_colours := 2 ** image.subformat_id;
@@ -566,17 +574,17 @@ package body GID.Decoding_GIF is
 
     if full_trace then
       Ada.Text_IO.Put_Line
-        (" - Image, interlaced: " & frame_interlaced'Image &
-         "; local palette: " & local_palette'Image &
-         "; transparency: " & frame_transparency'Image &
-         "; transparency index:" & transp_color'Image);
+        (" - Image, interlaced: " & Boolean'Image (frame_interlaced) &
+         "; local palette: " & Boolean'Image (local_palette) &
+         "; transparency: " & Boolean'Image (frame_transparency) &
+         "; transparency index:" & Color_Type'Image (transp_color));
     end if;
 
     --  Get initial code size
     Get_Byte (image.buffer, temp);
     if Natural (temp) not in Code_Size_Range then
-      raise error_in_image_data with
-        "GIF: wrong LZW code size (must be in 2 .. 12), is" & temp'Image;
+      raise error_in_image_data;
+      --  with  "GIF: wrong LZW code size (must be in 2 .. 12), is" & temp'Image;
     end if;
     code_size_as_in_frame_header := Natural (temp);
 

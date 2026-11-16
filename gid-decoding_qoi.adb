@@ -27,7 +27,11 @@ package body GID.Decoding_QOI is
     pragma Inline (Output_Pixel);
       function Times_257 (x : Primary_Color_Range) return Primary_Color_Range
       is
-      (16 * (16 * x) + x) with Inline;  --  This is 257 * x, = 16#0101# * x
+      pragma Inline (Times_257);
+      begin
+        return (16 * (16 * x) + x);
+      end Times_257;
+      --  This is 257 * x, = 16#0101# * x
       --  Numbers are 8-bit -> no OA warning at instantiation.
       --  Returns x if type Primary_Color_Range is mod 2**8.
     begin
@@ -48,7 +52,8 @@ package body GID.Decoding_QOI is
             --  Times_257 makes max intensity FF go to FFFF
           );
         when others =>
-          raise invalid_primary_color_range with "Color range not supported";
+          raise invalid_primary_color_range;
+          --  with "Color range not supported";
       end case;
     end Output_Pixel;
 
@@ -127,7 +132,8 @@ package body GID.Decoding_QOI is
     Get_Byte (image.buffer, b1);
     eos_good := eos_good and b1 = 1;
     if not eos_good then
-      raise error_in_image_data with "QOI format: unexpected end of stream";
+      raise error_in_image_data;
+      --  with "QOI format: unexpected end of stream";
     end if;
   end Load;
 

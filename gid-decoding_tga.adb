@@ -118,7 +118,11 @@ package body GID.Decoding_TGA is
     pragma Inline (Output_Pixel);
       function Times_257 (x : Primary_Color_Range) return Primary_Color_Range
       is
-      (16 * (16 * x) + x) with Inline;  --  This is 257 * x, = 16#0101# * x
+      pragma Inline (Times_257);
+      begin
+        return (16 * (16 * x) + x);
+      end Times_257;
+      --  This is 257 * x, = 16#0101# * x
       --  Numbers are 8-bit -> no OA warning at instantiation.
       --  Returns x if type Primary_Color_Range is mod 2**8.
     begin
@@ -137,8 +141,8 @@ package body GID.Decoding_TGA is
              Times_257 (Primary_Color_Range (pix.alpha)));
              --  Times_257 makes max intensity FF go to FFFF
         when others =>
-          raise invalid_primary_color_range
-            with "TGA: color range not supported";
+          raise invalid_primary_color_range;
+          --  with "TGA: color range not supported";
       end case;
     end Output_Pixel;
 

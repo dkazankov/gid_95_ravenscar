@@ -1,0 +1,7 @@
+pragma Ada_95;
+pragma Profile (Ravenscar);
+
+--  pragma Restrictions (No_Allocators);
+--  pragma Restrictions (No_Implicit_Heap_Allocations);
+--  pragma Restrictions (No_Dependence => Ada.Unchecked_Deallocation);
+--  pragma Default_Storage_Pool (null);

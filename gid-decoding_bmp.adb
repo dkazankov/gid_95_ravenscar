@@ -10,7 +10,11 @@ package body GID.Decoding_BMP is
     --
     function Times_257 (x : Primary_Color_Range) return Primary_Color_Range
     is
-    (16 * (16 * x) + x) with Inline;  --  This is 257 * x, = 16#0101# * x
+    pragma Inline (Times_257);
+    begin
+      return Primary_Color_Range (16 * (16 * x) + x);
+    end Times_257;
+    --  This is 257 * x, = 16#0101# * x
     --  Numbers are 8-bit -> no OA warning at instantiation.
     --  Returns x if type Primary_Color_Range is mod 2**8.
 
@@ -34,8 +38,8 @@ package body GID.Decoding_BMP is
              --  Times_257 makes max intensity FF go to FFFF
              full_opaque);
         when others =>
-          raise invalid_primary_color_range
-            with "BMP: color range not supported";
+          raise invalid_primary_color_range;
+          --  with "BMP: color range not supported";
       end case;
     end Pixel_with_palette;
     --
@@ -115,8 +119,8 @@ package body GID.Decoding_BMP is
                     full_opaque
                   );
                 when others =>
-                  raise invalid_primary_color_range
-                     with "BMP: color range not supported";
+                  raise invalid_primary_color_range;
+                  --   with "BMP: color range not supported";
               end case;
               x := x + 1;
             end loop;

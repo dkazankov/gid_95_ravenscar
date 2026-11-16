@@ -15,6 +15,6 @@ private package GID.Decoding_GIF is
   --
   procedure Load
     (image      : in out Image_Descriptor;
-     next_frame :    out Ada.Calendar.Day_Duration);
+     next_frame :    out Duration);
 
 end GID.Decoding_GIF;
